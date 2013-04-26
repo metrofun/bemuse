@@ -52,7 +52,7 @@ test('HTML build', function () {
         }
     });
     equal(
-        Bemuse.HTML.build({block: 'test'}),
+        Bemuse.HTML.build({block: 'test'}, true),
         '<span class="test"><div class="test-2"></div></span>',
         'Block declaration works'
     );
@@ -68,7 +68,7 @@ test('HTML build', function () {
         }
     });
     equal(
-        Bemuse.HTML.build({block: 'test-2', content: {element: 'title'}}),
+        Bemuse.HTML.build({block: 'test-2', content: {element: 'title'}}, true),
         '<div class="test-2"><span class="test-2__title">Hello</span></div>',
         'Element declaration works'
     );
@@ -83,7 +83,7 @@ test('HTML build', function () {
         }
     });
     equal(
-        Bemuse.HTML.build({block: 'test-3'}),
+        Bemuse.HTML.build({block: 'test-3'}, true),
         "<span class=\"test\"><div class=\"test-2\"></div></span>",
         'Wrapper works'
     );
@@ -96,7 +96,7 @@ test('HTML build', function () {
         }
     });
     equal(
-        Bemuse.HTML.build({block: 'test-4'}),
+        Bemuse.HTML.build({block: 'test-4'}, true),
         '',
         'Wrap with array to remove'
     );
@@ -106,13 +106,32 @@ test('HTML build', function () {
             {block: 'test'},
             {block: 'test-2'},
             {block: 'test-3'}
-        ]),
+        ], true),
         '<span class="test"><div class="test-2"></div></span><div class="test-2"></div><span class="test"><div class="test-2"></div></span>',
         'Arrays supported'
     );
 });
 module('Bemuse DOM');
 test('DOM init', function () {
+    Bemuse.Block('test').declare({
+        HTML: {
+            onBlock: function (tree) {
+                tree.tag = 'span';
+                tree.content = {
+                    block: 'test-2'
+                };
+            }
+        }
+    });
+
+    var elem = document.createElement("div");
+    elem.innerHTML = Bemuse.HTML.build([
+        {block: 'test'},
+        {block: 'test-2'},
+        {block: 'test-3'}
+    ]);
+    document.body.insertBefore(elem, document.body.childNodes[0]);
+
     equal(
         Bemuse.HTML.build([
             {block: 'test'},

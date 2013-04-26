@@ -82,7 +82,10 @@
             return blocks[blockName];
         },
         DOM: {
-            initOn: 'load'
+            initOn: 'load',
+            init: function () {
+                console.log(arguments);
+            }
         },
         HTML: {
             /**
@@ -100,24 +103,38 @@
                 var initOnInsert = {},
                     htmljson = this.bemjsonToHtmljson(bemjson, initOnInsert);
 
-                if (!manualInit) {
-                    this._addInitScript(htmljson);
+                if (!(manualInit || _(initOnInsert).isEmpty())) {
+                    this._addInitScript(htmljson, initOnInsert);
                 }
                 return this.jsonToHtml(htmljson);
             },
             /**
+             * Adds script tag into json,
+             * to initialize blocks
+             *
              * @param {Array|Object} json
              * @param {Array} [blocks]
              */
-            _addInitScript: function (json) {
+            _addInitScript: function (json, initOnInsert) {
+                var appendTo;
                 if (_(json).isArray()) {
-                    _(json).forEach(this._addInitScript);
+                    appendTo = json;
                 } else if (_(json).isObject()) {
                     if (!json.content) {
                         json.content = [];
+                    } else {
+                        json.content = _([]).concat(json.content);
                     }
-                    // json.content = _(json.content).concat('zzzzz');
+                    appendTo = json.content;
                 }
+                appendTo.push({
+                    tag: 'img',
+                    attrs: {
+                        'class': 'zzz',
+                        src: 'zzz',
+                        onerror: 'alert("2")'
+                    }
+                });
             },
             /**
              * Converts BEM-oriented json into HTML-oriented json
@@ -150,11 +167,11 @@
                     block = bemjson.block;
                     mods = bemjson.mods || [];
 
-                    declarationNames = mods.map(
-                        canonicalModName.bind(null, block)
+                    declarationNames = _(mods).map(
+                        _(canonicalModName).bind(null, block)
                     ).concat(block);
 
-                    declarationNames.forEach(function (name) {
+                    _(declarationNames).forEach(function (name) {
                         if (blocks[name] && blocks[name].DOM.initOn === 'load') {
                             initOnInsert[name] = true;
                         }
@@ -167,8 +184,8 @@
                     mods = root.mods || this.mod || [];
                     element = bemjson.element;
 
-                    declarationNames = mods.map(
-                        canonicalModName.bind(null, block)
+                    declarationNames = _(mods).map(
+                        _(canonicalModName).bind(null, block)
                     ).concat(block);
 
                     this._applyDeclarations(bemjson, declarationNames, element);
@@ -199,7 +216,7 @@
              * @param {String} [element] If ommited, process onBlock
              */
             _applyDeclarations: function (bemjson, declarationNames, element) {
-                declarationNames.some(function (name) {
+                _(declarationNames).some(function (name) {
                     var declaration = blocks[name],
                         handler;
 
@@ -256,7 +273,7 @@
                 var tag, attrs, content, result;
 
                 if (_(bemjson).isArray()) {
-                    return bemjson.map(this.jsonToHtml.bind(this)).join('');
+                    return _(bemjson).map(this.jsonToHtml, this).join('');
                 // all logic goes here
                 } else if (_(bemjson).isObject()) {
                     tag = bemjson.tag || 'div';
