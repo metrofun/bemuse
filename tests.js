@@ -1,4 +1,4 @@
-/*global ,equal, test, Bemuse */
+/*global ,equal, test, Bemuse, asyncTest, start */
 module('Bemuse HTML');
 test('HTML jsonToHtml', function () {
     equal(
@@ -41,7 +41,8 @@ test('HTML jsonToHtml', function () {
     );
 });
 test('HTML build', function () {
-    Bemuse.Block('test').declare({
+    Bemuse.declare({
+        block: 'test',
         HTML: {
             onBlock: function (tree) {
                 tree.tag = 'span';
@@ -57,7 +58,8 @@ test('HTML build', function () {
         'Block declaration works'
     );
 
-    Bemuse.Block('test-2').declare({
+    Bemuse.declare({
+        block: 'test-2',
         HTML: {
             onElement: {
                 title: function (tree) {
@@ -73,7 +75,8 @@ test('HTML build', function () {
         'Element declaration works'
     );
 
-    Bemuse.Block('test-3').declare({
+    Bemuse.declare({
+        block: 'test-3',
         HTML: {
             onBlock: function (tree) {
                 tree.wrapper = {
@@ -88,7 +91,8 @@ test('HTML build', function () {
         'Wrapper works'
     );
 
-    Bemuse.Block('test-4').declare({
+    Bemuse.declare({
+        block: 'test-4',
         HTML: {
             onBlock: function (tree) {
                 tree.wrapper = [];
@@ -112,34 +116,58 @@ test('HTML build', function () {
     );
 });
 module('Bemuse DOM');
-test('DOM init', function () {
-    Bemuse.Block('test').declare({
-        HTML: {
-            onBlock: function (tree) {
-                tree.tag = 'span';
-                tree.content = {
-                    block: 'test-2'
-                };
+asyncTest('DOM base', 2, function () {
+    var html, elem, counter = 0;
+
+    Bemuse.declare({
+        block: 'test',
+        DOM: {
+            init: function () {
+                counter++;
+                equal(counter, 3, 'all three init methods were called');
+
+                start();
             }
         }
     });
 
-    var elem = document.createElement("div");
-    elem.innerHTML = Bemuse.HTML.build([
-        {block: 'test'},
+    Bemuse.declare({
+        block: 'test',
+        mod: 'hz',
+        DOM: {
+            init: function () {
+                counter++;
+                this.init.base();
+            }
+        }
+    });
+
+    Bemuse.declare({
+        block: 'test',
+        mod: 'user',
+        DOM: {
+            init: function () {
+                counter++;
+                equal(counter, 1, 'last mod called first');
+
+                this.init.base();
+            }
+        }
+    });
+
+
+    html = Bemuse.HTML.build([
+        {
+            block: 'test',
+            mods: ['hz', 'user']
+        },
         {block: 'test-2'},
         {block: 'test-3'}
     ]);
-    document.body.insertBefore(elem, document.body.childNodes[0]);
 
-    equal(
-        Bemuse.HTML.build([
-            {block: 'test'},
-            {block: 'test-2'},
-            {block: 'test-3'}
-        ]),
-        '<span class="test"><div class="test-2"></div></span><div class="test-2"></div><span class="test"><div class="test-2"></div></span>',
-        'Wrap with array to remove'
-    );
+    elem = document.createElement("div");
+    elem.innerHTML = html;
+    console.log(html);
+    document.body.insertBefore(elem, document.body.childNodes[0]);
 });
 
